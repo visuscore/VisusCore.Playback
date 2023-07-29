@@ -15,6 +15,7 @@ public class Startup : StartupBase
 
     public Startup(IShellConfiguration shellConfiguration) =>
         _shellConfiguration = shellConfiguration;
+
     public override void ConfigureServices(IServiceCollection services)
     {
         services.Configure<HlsOptions>(

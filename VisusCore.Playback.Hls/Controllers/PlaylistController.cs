@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using VisusCore.Playback.Hls.Constants;
 using VisusCore.Playback.Hls.Models;
 using VisusCore.Playback.Hls.Services;
+using VisusCore.Storage.Abstractions.Services;
 
 namespace VisusCore.Playback.Hls.Controllers;
 
@@ -19,15 +20,18 @@ public class PlaylistController : Controller
 {
     private readonly IOptions<HlsOptions> _hlsOptions;
     private readonly QueuedVideoStreamSegmentConsumerContextAccessor _contextAccessor;
+    private readonly IStreamSegmentStorageReader _storageReader;
     private readonly LinkGenerator _linkGenerator;
 
     public PlaylistController(
         IOptions<HlsOptions> hlsOptions,
         QueuedVideoStreamSegmentConsumerContextAccessor contextAccessor,
+        IStreamSegmentStorageReader storageReader,
         LinkGenerator linkGenerator)
     {
         _hlsOptions = hlsOptions;
         _contextAccessor = contextAccessor;
+        _storageReader = storageReader;
         _linkGenerator = linkGenerator;
     }
 
@@ -92,6 +96,59 @@ public class PlaylistController : Controller
             HttpContext.RequestAborted);
 
         if (segment == null)
+        {
+            return NotFound();
+        }
+
+        var segmentStream = new MemoryStream();
+        segmentStream.Write(segment.Init.Init);
+        segmentStream.Write(segment.Data);
+        segmentStream.Seek(0, SeekOrigin.Begin);
+
+        return File(segmentStream, "application/octet-stream");
+    }
+
+    [HttpGet("{streamId}/playback/playlist/{timestampUtc}")]
+    public async Task<IActionResult> Playback(string streamId, long timestampUtc)
+    {
+        var metas = await _storageReader.GetSegmentMetasAsync(
+            streamId, timestampUtc, endTimestampUtc: null, skip: null, 1000, HttpContext.RequestAborted);
+
+        var playlist = new HlsMediaPlaylist
+        {
+            Version = 11,
+            MediaSequence = 0,
+            TargetDuration = (int)(metas.Max(meta => meta.Duration) / 1_000_000),
+            PlaylistEntries = metas.Select(meta => new HlsMediaPlaylistEntry
+            {
+                Duration = (int)(meta.Duration / 1_000_000),
+                Path = _linkGenerator.GetPathByAction(
+                    nameof(PlaybackSegment),
+                    typeof(PlaylistController).ControllerName(),
+                    new
+                    {
+                        Area = FeatureIds.Module,
+                        StreamId = streamId,
+                        meta.TimestampUtc,
+                    }),
+            }).ToList(),
+        };
+
+        return File(Encoding.UTF8.GetBytes(PlaylistToTextHelper.ToText(playlist)), "application/vnd.apple.mpegurl");
+    }
+
+    [HttpGet("{streamId}/playback/segment/{timestampUtc}")]
+    public async Task<IActionResult> PlaybackSegment(string streamId, long timestampUtc)
+    {
+        if (!_contextAccessor.IsExists(streamId))
+        {
+            return NotFound();
+        }
+
+        var segments = await _storageReader.GetSegmentsAsync(
+            streamId, timestampUtc, endTimestampUtc: null, skip: null, 1, HttpContext.RequestAborted);
+
+        if (segments.FirstOrDefault() is not { } segment)
         {
             return NotFound();
         }
