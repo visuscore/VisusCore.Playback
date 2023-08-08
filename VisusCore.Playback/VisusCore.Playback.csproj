@@ -15,7 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\VisusCore.Configuration\VisusCore.Configuration.VideoStream.Core\VisusCore.Configuration.VideoStream.Core.csproj" />
+    <ProjectReference Include="..\..\VisusCore.Consumer\VisusCore.Consumer\VisusCore.Consumer.csproj" />
     <ProjectReference Include="..\..\VisusCore.SignalR\VisusCore.SignalR\VisusCore.SignalR.csproj" />
+    <ProjectReference Include="..\..\VisusCore.Storage\VisusCore.Storage\VisusCore.Storage.csproj" />
   </ItemGroup>
 
 </Project>

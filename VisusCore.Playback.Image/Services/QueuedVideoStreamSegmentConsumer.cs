@@ -1,11 +1,9 @@
-using Microsoft.Extensions.Options;
 using System.Threading;
 using System.Threading.Tasks;
 using VisusCore.Consumer.Abstractions.Models;
 using VisusCore.Consumer.Core.Services;
-using VisusCore.Playback.Hls.Models;
 
-namespace VisusCore.Playback.Hls.Services;
+namespace VisusCore.Playback.Image.Services;
 
 public class QueuedVideoStreamSegmentConsumer
     : QueuedVideoStreamSegmentConsumerBase<QueuedVideoStreamSegmentConsumerContext>
@@ -29,13 +27,8 @@ public class QueuedVideoStreamSegmentConsumer
 public class QueuedVideoStreamSegmentConsumerContextAccessor
     : QueuedVideoStreamSegmentConsumerContextAccessorBase<QueuedVideoStreamSegmentConsumerContext>
 {
-    private readonly IOptions<HlsOptions> _hlsOptions;
-
-    public QueuedVideoStreamSegmentConsumerContextAccessor(IOptions<HlsOptions> hlsOptions) =>
-        _hlsOptions = hlsOptions;
-
     protected override QueuedVideoStreamSegmentConsumerContext CreateContext(string streamId) =>
-        new(streamId, _hlsOptions.Value.LiveCacheRetention + _hlsOptions.Value.LiveMinSegmentsCount);
+        new(streamId, 1);
 }
 
 public sealed class QueuedVideoStreamSegmentConsumerContext : QueuedVideoStreamSegmentConsumerContextBase

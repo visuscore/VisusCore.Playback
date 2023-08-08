@@ -11,14 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.3.2" />
     <PackageReference Include="OrchardCore.Module.Targets" Version="1.6.0" />
     <PackageReference Include="OrchardCore.Mvc.Core" Version="1.6.0" />
     <PackageReference Include="PlaylistsNET" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\VisusCore.Consumer\VisusCore.Consumer\VisusCore.Consumer.csproj" />
-    <ProjectReference Include="..\..\VisusCore.Storage\VisusCore.Storage\VisusCore.Storage.csproj" />
     <ProjectReference Include="..\VisusCore.Playback\VisusCore.Playback.csproj" />
   </ItemGroup>
 

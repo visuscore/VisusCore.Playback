@@ -1,8 +1,6 @@
 using OrchardCore.Modules.Manifest;
-using ConsumerFeatureIds = VisusCore.Consumer.Constants.FeatureIds;
 using FfmpegFeatureIds = VisusCore.Ffmpeg.Constants.FeatureIds;
 using PlaybackFeatureIds = VisusCore.Playback.Constants.FeatureIds;
-using StorageFeatureIds = VisusCore.Storage.Constants.FeatureIds;
 
 [assembly: Module(
     Name = "VisusCore Image Playback",
@@ -13,9 +11,7 @@ using StorageFeatureIds = VisusCore.Storage.Constants.FeatureIds;
     Website = "https://github.com/visuscore/VisusCore.Playback",
     Dependencies = new[]
     {
-        ConsumerFeatureIds.Module,
         FfmpegFeatureIds.Module,
         PlaybackFeatureIds.Module,
-        StorageFeatureIds.Module,
     }
 )]

@@ -1,7 +1,5 @@
 using OrchardCore.Modules.Manifest;
-using ConsumerFeatureIds = VisusCore.Consumer.Constants.FeatureIds;
 using PlaybackFeatureIds = VisusCore.Playback.Constants.FeatureIds;
-using StorageFeatureIds = VisusCore.Storage.Constants.FeatureIds;
 
 [assembly: Module(
     Name = "VisusCore Hls Playback",
@@ -12,8 +10,6 @@ using StorageFeatureIds = VisusCore.Storage.Constants.FeatureIds;
     Website = "https://github.com/visuscore/VisusCore.Playback",
     Dependencies = new[]
     {
-        ConsumerFeatureIds.Module,
         PlaybackFeatureIds.Module,
-        StorageFeatureIds.Module,
     }
 )]

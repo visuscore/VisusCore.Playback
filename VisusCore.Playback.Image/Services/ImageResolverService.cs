@@ -1,4 +1,5 @@
 using Microsoft.IO;
+using OrchardCore.Modules;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats;
@@ -8,9 +9,12 @@ using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using VisusCore.Consumer.Abstractions.Models;
 using VisusCore.Native.Ffmpeg.Core.FrameExtractor;
+using VisusCore.Native.Ffmpeg.Core.Models;
 using VisusCore.Playback.Image.Extensions;
 using VisusCore.Playback.Image.Models;
 using VisusCore.Storage.Abstractions.Services;
@@ -22,9 +26,59 @@ public class ImageResolverService
 {
     private static readonly RecyclableMemoryStreamManager MemoryStreamManager = new();
     private readonly IStreamSegmentStorageReader _storageReader;
+    private readonly QueuedVideoStreamSegmentConsumerContextAccessor _consumerContextAccessor;
+    private readonly IClock _clock;
 
-    public ImageResolverService(IStreamSegmentStorageReader storageReader) =>
+    public ImageResolverService(
+        IStreamSegmentStorageReader storageReader,
+        QueuedVideoStreamSegmentConsumerContextAccessor consumerContextAccessor,
+        IClock clock)
+    {
         _storageReader = storageReader;
+        _consumerContextAccessor = consumerContextAccessor;
+        _clock = clock;
+    }
+
+    public async Task<StreamDetails> GetLatestSegmentDetailsAsync(string streamId, CancellationToken cancellationToken = default)
+    {
+        var segment = await GetLatestImageSegmentAsync(streamId, cancellationToken);
+        if (segment is null)
+        {
+            return null;
+        }
+
+        return ExtractStreamDetails(segment)
+            .FirstOrDefault(details => details.MediaType == EMediaType.Video);
+    }
+
+    public async Task<(ImageSharpImage Image, IImageEncoder Encoder)?> GetLatestImageAsync(
+        string streamId,
+        ImageTransformationsParameters transformations,
+        CancellationToken cancellationToken = default)
+    {
+        var segment = await GetLatestImageSegmentAsync(streamId, cancellationToken);
+        if (segment is null)
+        {
+            return null;
+        }
+
+        return ExtractFrameToImage(segment, transformations);
+    }
+
+    public async Task<StreamDetails> GetSegmentDetailsAsync(
+        string streamId,
+        long timestampUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var segment = await _storageReader.GetSegmentAroundAsync(streamId, timestampUtc, cancellationToken);
+        if (segment is null)
+        {
+            return null;
+        }
+
+        return ExtractStreamDetails(segment)
+            .FirstOrDefault(details => details.MediaType == EMediaType.Video);
+    }
 
     public async Task<(ImageSharpImage Image, IImageEncoder Encoder)?> GetImageAsync(
         string streamId,
@@ -39,6 +93,43 @@ public class ImageResolverService
             return null;
         }
 
+        return ExtractFrameToImage(segment, transformations);
+    }
+
+    private async Task<IVideoStreamSegment> GetLatestImageSegmentAsync(
+        string streamId,
+        CancellationToken cancellationToken = default)
+    {
+        var segment = default(IVideoStreamSegment);
+        if (_consumerContextAccessor.IsExists(streamId))
+        {
+            segment = await _consumerContextAccessor.InvokeLockedAsync(
+                streamId,
+                context => Task.FromResult(context.Queue.FirstOrDefault()),
+                cancellationToken: cancellationToken);
+        }
+
+        return segment ??= await _storageReader.GetSegmentLatestBeforeAsync(
+            streamId,
+            _clock.GetUnixTimeMilliseconds() * 1000,
+            cancellationToken);
+    }
+
+    private static IEnumerable<StreamDetails> ExtractStreamDetails(IVideoStreamSegment segment)
+    {
+        using var segmentStream = new RecyclableMemoryStream(MemoryStreamManager);
+        segmentStream.Write(segment.Init.Init);
+        segmentStream.Seek(0, SeekOrigin.Begin);
+
+        using var extractor = new Extractor(segmentStream);
+
+        return extractor.GetStreams();
+    }
+
+    private static (ImageSharpImage Image, IImageEncoder Encoder)? ExtractFrameToImage(
+        IVideoStreamSegment segment,
+        ImageTransformationsParameters transformations)
+    {
         using var segmentStream = new RecyclableMemoryStream(MemoryStreamManager);
         segmentStream.Write(segment.Init.Init);
         segmentStream.Write(segment.Data);

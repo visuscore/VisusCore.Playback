@@ -7,20 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <NodeJsExtensionsNpmPackageFiles Remove="Assets\Scripts\App.tsx" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lombiq.HelpfulLibraries.AspNetCore" Version="6.0.0" />
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.3.2" />
+    <PackageReference Include="Lombiq.NodeJs.Extensions" Version="1.2.4" />
     <PackageReference Include="OrchardCore.Module.Targets" Version="1.6.0" />
-    <PackageReference Include="OrchardCore.Mvc.Core" Version="1.6.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\VisusCore.Ffmpeg\VisusCore.Ffmpeg\VisusCore.Ffmpeg.csproj" />
-    <ProjectReference Include="..\VisusCore.Playback\VisusCore.Playback.csproj" />
+    <ProjectReference Include="..\VisusCore.Playback.Hls\VisusCore.Playback.Hls.csproj" />
+    <ProjectReference Include="..\VisusCore.Playback.Image\VisusCore.Playback.Image.csproj" />
   </ItemGroup>
 
 </Project>

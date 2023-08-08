@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
+using Microsoft.IO;
 using OrchardCore.Mvc.Core.Utilities;
 using PlaylistsNET.Content;
 using PlaylistsNET.Models;
@@ -8,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VisusCore.Consumer.Abstractions.Models;
 using VisusCore.Playback.Hls.Constants;
 using VisusCore.Playback.Hls.Models;
 using VisusCore.Playback.Hls.Services;
@@ -18,6 +20,7 @@ namespace VisusCore.Playback.Hls.Controllers;
 [Route("playback/hls")]
 public class PlaylistController : Controller
 {
+    private static readonly RecyclableMemoryStreamManager MemoryStreamManager = new();
     private readonly IOptions<HlsOptions> _hlsOptions;
     private readonly QueuedVideoStreamSegmentConsumerContextAccessor _contextAccessor;
     private readonly IStreamSegmentStorageReader _storageReader;
@@ -47,11 +50,11 @@ public class PlaylistController : Controller
             streamId,
             context => Task.FromResult(
                 (
-                    context.Cache.OrderBy(segment => segment.Metadata.TimestampUtc)
+                    context.Queue.OrderBy(segment => segment.Metadata.TimestampUtc)
                         .TakeLast(_hlsOptions.Value.LiveMinSegmentsCount)
                         .ToList(),
                     context.Sequence)),
-            HttpContext.RequestAborted);
+            cancellationToken: HttpContext.RequestAborted);
 
         if (!segments.Any())
         {
@@ -92,20 +95,15 @@ public class PlaylistController : Controller
         var segment = await _contextAccessor.InvokeLockedAsync(
             streamId,
             context => Task.FromResult(
-                context.Cache.FirstOrDefault(segment => segment.Metadata.TimestampUtc == timestampUtc)),
-            HttpContext.RequestAborted);
+                context.Queue.FirstOrDefault(segment => segment.Metadata.TimestampUtc == timestampUtc)),
+            cancellationToken: HttpContext.RequestAborted);
 
         if (segment == null)
         {
             return NotFound();
         }
 
-        var segmentStream = new MemoryStream();
-        segmentStream.Write(segment.Init.Init);
-        segmentStream.Write(segment.Data);
-        segmentStream.Seek(0, SeekOrigin.Begin);
-
-        return File(segmentStream, "application/octet-stream");
+        return ServeSegment(segment);
     }
 
     [HttpGet("{streamId}/playback/playlist/{timestampUtc}")]
@@ -153,7 +151,15 @@ public class PlaylistController : Controller
             return NotFound();
         }
 
-        var segmentStream = new MemoryStream();
+        return ServeSegment(segment);
+    }
+
+    private IActionResult ServeSegment(IVideoStreamSegment segment)
+    {
+        // The stream will be disposed by the FileResult.
+#pragma warning disable CA2000 // Dispose objects before losing scope
+        var segmentStream = new RecyclableMemoryStream(MemoryStreamManager);
+#pragma warning restore CA2000 // Dispose objects before losing scope
         segmentStream.Write(segment.Init.Init);
         segmentStream.Write(segment.Data);
         segmentStream.Seek(0, SeekOrigin.Begin);
