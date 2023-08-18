@@ -29,7 +29,7 @@ export default class PlaybackImageService {
 
     async getLatestSegmentDetails(streamId: string): Promise<StreamDetailsModel> {
         return await (await this.hubConnectionManager.createHubConnection())
-            .invoke("GetLateSegmentDetailsAsync", streamId);
+            .invoke("GetLatestSegmentDetailsAsync", streamId);
     }
 
     async getSegmentDetails(streamId: string, timestampUtc: number): Promise<StreamDetailsModel> {

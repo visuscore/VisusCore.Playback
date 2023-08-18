@@ -18,7 +18,7 @@ public class ImageHub : Hub
     public ImageHub(ImageResolverService imageResolver) =>
         _imageResolver = imageResolver;
 
-    public Task<StreamDetails> GetLateSegmentDetailsAsync(string streamId) =>
+    public Task<StreamDetails> GetLatestSegmentDetailsAsync(string streamId) =>
         _imageResolver.GetLatestSegmentDetailsAsync(streamId, Context.ConnectionAborted);
 
     public Task<StreamDetails> GetSegentDetailsAsync(string streamId, long timestampUtc) =>
