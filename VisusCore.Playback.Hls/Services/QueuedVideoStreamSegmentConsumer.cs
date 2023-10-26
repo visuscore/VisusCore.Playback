@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using VisusCore.Consumer.Abstractions.Models;
@@ -20,6 +21,11 @@ public class QueuedVideoStreamSegmentConsumer
         IVideoStreamSegment segment,
         CancellationToken cancellationToken = default)
     {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
         context.Sequence++;
 
         return Task.CompletedTask;

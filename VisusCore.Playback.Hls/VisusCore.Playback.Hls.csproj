@@ -12,8 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.3.2" />
-    <PackageReference Include="OrchardCore.Module.Targets" Version="1.6.0" />
-    <PackageReference Include="OrchardCore.Mvc.Core" Version="1.6.0" />
+    <PackageReference Include="OrchardCore.Module.Targets" Version="1.7.2" />
+    <PackageReference Include="OrchardCore.Mvc.Core" Version="1.7.2" />
     <PackageReference Include="PlaylistsNET" Version="1.4.0" />
   </ItemGroup>
 

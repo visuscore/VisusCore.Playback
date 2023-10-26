@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using OrchardCore.ResourceManagement;
+using System;
 using VisusCore.Playback.Samples.Constants;
 
 namespace VisusCore.Playback.Samples;
@@ -16,5 +17,13 @@ public class ResourceManagementOptionsConfiguration : IConfigureOptions<Resource
             .DefineScript(ResourceNames.PlaybackSampleApp)
             .SetUrl(Scripts + "/App.min.js", Scripts + "/App.js");
 
-    public void Configure(ResourceManagementOptions options) => options.ResourceManifests.Add(_manifest);
+    public void Configure(ResourceManagementOptions options)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        options.ResourceManifests.Add(_manifest);
+    }
 }
